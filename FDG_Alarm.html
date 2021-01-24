@@ -1,0 +1,418 @@
+<!--
+/**
+ * NMT: The Nuclear Medicine Toolkit(tm) (http://www.nuimsa.es)
+ * Copywright (c) San Miguel Software, Sl. (http://www.sanmiguelsoftware.com)
+ *
+ * Licensed under The MIT License
+ * For full copyright and license information, please see the LICENSE.TXT (https://www.tldrlegal.com/l/mit)
+ * Redistributions of files must retain the above copyright notice.
+ *
+ * @copyright   Copywright (c) San Miguel Software (http://www.sanmiguelsoftware.com)
+ * @author      Carlos Cárdenas Negro 
+ * @link        http://www.nuimsa.es
+ * @since       0.1.0
+ * @license     http://www.opensource.org/licenses/mit-license.php MIT License
+ * @version     2.0
+ * The sound effect is permitted for non-commercial use under license 
+ * “Attribution-NonCommercial 4.0 International (CC BY-NC 4.0)
+ *
+ -->
+<!DOCTYPE HTML>
+<html lang="es-ES">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8; lang=es-ES">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="Description" content="Utilidad simple para controlar el decay de la 18F-FDG">
+<meta name="robots" content="noindex,nofollow">
+<title id="titulo">18F Decay Counter</title>
+<!-- css -->
+<link rel="stylesheet" type="text/css" href="./css/w3.css"/>
+<link rel="stylesheet" type="text/css" href="./fontawesome-free-5.15.1-web/css/all.css"/>
+<!-- js -->
+<script src="./jquery/jquery-3.5.1.min.js"></script>
+
+</head>
+<body class="w3-theme" style="height: 800px; width:600">
+	<!-- Cabecera -->
+	<header class="w3-container w3-blue w3-center w3-card" style="height:20%">
+			<h1 class="w3-jumbo" style="text-shadow:1px 4px 0 #444">Fluor-18 Decay Counter</h1>
+			<p><i class="w3-xlarge w3-centered">(half live 109.771)</i></p>
+	</header>
+	<!-- Cuerpo -->
+	<div class="w3-container" style="height:70%">
+		<p/>
+		<!-- formulario -->
+		<div id="formulario" class="w3-container" style="height: 25%; display:none">
+			<form class="w3-card-4 w3-white w3-display-center" id="miForm" target="_blank" method="post" onsubmit="dummy()">
+				<header class="w3-green">
+					<h2 class="w3-green w3-center w3-container">Input Data</h2>
+				</header>
+				<div class="w3-container">
+					<label>Measure time<span class="w3-small"> (24h format -hh:mm-) (let empty to use actual time)</span></label>
+					<input id="horaMedida" class="w3-input w3-border w3-leftbar w3-hover-border-red w3-border-indigo w3-round" style="width: 50%" type="text" autofocus/>					
+					<label>Current activity or at measure time <span class="w3-small"> (MBq only integer numbers)</span></label>
+					<input id="act" class="w3-input w3-border w3-leftbar w3-hover-border-red w3-border-blue w3-round" style="width: 50%" type="text"/>
+					<label>Limit activity (optional)</label>
+					<input id="limite" class="w3-input w3-border w3-leftbar w3-hover-border-red w3-border-light-blue w3-round" style="width:50%" type="text"/>
+					<p>  </p>
+					<div class="w3-container w3-cell-row">
+						<div class="w3-cell" style="width: 25%">
+							<button id="submit" class="w3-btn w3-red w3-hover-blue w3-hoverable">Submit data</button>
+						</div>
+						<div class="w3-cell">
+							<input id="ON" class="w3-radio w3-blue" type="radio" name="alarm" value="ON" checked>
+<label>Alarm On</label>
+							<input id="OFF" class="w3-radio w3-green" type="radio" name="alarm" value="OFF">
+<label>Alarm Off</label>
+						</div>
+					</div>
+					<p></p>	
+				</div>
+			</form>
+		</div>
+		<!-- modal window -->
+		<div id="id01" class="w3-modal">
+			<div class="w3-modal-content w3-round-large w3-cell-row">
+				<div class="w3-container w3-cell w3-white" style="width:15%">
+					<p class="w3-center w3-jumbo"><i class="fa fa-exclamation-triangle"></i></p>
+				</div>
+				<div class="w3-container w3-red w3-padding-32 w3-center w3-cell">
+					<span onclick="document.getElementById('id01').style.display='none'" class="w3-button w3-display-topright">&times;</span>
+					<p id="msg0" class="w3-xlarge"></p>
+					<i><p id="msg1" class="w3-large"><i></i></p></i>
+					<p id="msg2" class="w3-xlarge"></p>
+				</div>
+			</div>
+		</div>
+		<!-- decay -->
+		<div id="decay" class="w3-container" style="height: 75%; display:none">
+			<table class="w3-table-all w3-centered w3-hoverable w3-card-4 w3-xlarge">
+				<tr>
+					<td class="w3-left-align" style="width: 50%">Initial Activity</td>
+					<td id="actInicial" class="w3-green"></td>
+				</tr>
+				<tr>
+					<td class="w3-left-align" style="width: 50%">Measure Time</td>
+					<td id="horaInicial" class="w3-light-green"></td>
+				</tr>
+			</table>
+			<p/>
+			<table id="tablaLimite" class="w3-table-all w3-centered w3-hoverable w3-card w3-xlarge">
+				<tr>
+					<td id="textoLimite" class="w3-left-align" style="width: 50%">Limit Activity</td>
+					<td id="valorLimite" class="w3-red"></td>
+				</tr>
+			</table>
+			<p/>
+			<table class="w3-table-all w3-centered w3-hoverable w3-card-4 w3-xlarge">
+				<tr>
+					<td class="w3-left-align" style="width: 50%">Current Activity</td>
+					<td id="actActual" class="w3-deep-orange"></td>
+				</tr>
+				<tr>
+					<td class="w3-left-align" style="width: 50%">Current Time</td>
+					<td id="horaActual" class="w3-orange"></td>
+				</tr>
+				<tr>
+					<td class="w3-left-align" style="width: 50%">Pass Time</td>
+					<td id="tiempoPasado" class="w3-amber"></td>
+				</tr>
+			</table>
+			<p class="w3-center">
+				<button id="finalizar" class="w3-btn w3-red w3-hover-blue">End counting</button>
+			</p>
+		</div>
+	</div>
+	<!-- footer -->
+	<div class="w3-blue" style="padding: 5px; height:5%; width: 100%;position: fixed; bottom:0px">
+		<p class="w3-small" style="color: white"><i class="fa fa-copyright"></i>
+			<a href="mailto:carloscardenasnegro@gmail.com">Carlos Cárdenas Negro</a> - San Miguel Software (<i class="fa fa-trademark"></i>).
+		</p>
+	</div>
+	<audio class="audio">
+		<source src=".\Wecker-sound\Wecker-sound.mp3" type="audio/mpeg">
+	</audio>
+</body>
+<!-- scripts -->
+<script>
+// gloobal variables
+var contador;
+
+var actInicial;
+var actActual;
+var actLimite;
+
+var horaInicial;
+var horaInicialMS;
+var horaActual;
+var horaActualMS;
+var horaLimite;			// hasta cuando podemos esperar..?
+
+var tiempoPasado;
+var tiempoPasadoMS;
+
+var horas;
+var minutos;
+
+var limiteFlag;			// se entró valor límite (true) o no (false) ?
+var delayFlag;			// se entró la actividad con anterioridad a la hora actual
+var alarmFlag;			// suena la alarma o no
+
+var msg = new Array(3);	// contenido del texto de los mensajes de aviso
+			
+const F18DECAYCONSTANT = 0.00631;
+const F18HALFLIVE = 6588000;
+
+$(document).ready(function(){
+
+	$("#formulario").fadeIn(1000);
+	
+	// jQuery methods go here...
+
+	$("#miForm").submit( function() {
+		// recupero contenido o lo rechazo
+		actInicial = $("#act").val();
+		if (actInicial == "") {
+			msg[0] = "Debe entrar, al menos, un valor numérico entero -no decimal- en el campo 'Actividad inicial'";
+			msg[1] = "(Nota: Puede dejar vacías la hora de medida -se usará la hora actual- y la actividad limite)";
+			$("#msg0").text(msg[0]);
+			$("#msg1").text(msg[1]);
+			//$("#msg2").text(msg[2]);			
+			$("#id01").css("display","block");
+			
+			// recupera el foco una vez cerrado el mensaje
+			$("#act").focus();
+			return false;
+		}else {
+			actActual = actInicial;
+			
+			// hay valor límite?... es opcional
+			limiteFlag = true;
+			actLimite = $("#limite").val();
+			if (actLimite == "") {
+				limiteFlag = false;
+			}
+			
+			// calculo la hora inicial
+			var temp;
+			var horMed;
+			var minMed;
+				
+			temp = $("#horaMedida").val();
+			if(temp != "" ) {
+				// se entró hora inicial
+				// compruebo su validez
+				temp = temp.split(":");
+				horMed = temp[0];
+				minMed = temp[1];
+				if (temp[1] == undefined) {
+					// no se entraron ":" asumo min = 0
+					minMed = "0";
+				}
+
+				if (horMed > 24) {
+					msg[0] = "El valor de la hora no puede ser superior a 24";
+					msg[1] = "(Nota: recuerde que debe usar el formato 24 horas hh:mm)";
+					$("#msg0").text(msg[0]);
+					$("#msg1").text(msg[1]);
+					//$("#msg2").text(msg[2]);
+					$("#id01").css("display","block");
+					
+					// recupera el foco una vez cerrado el mensaje
+					$("#horaMedida").focus();
+					return false;
+				}
+				if (minMed > 59) {
+					msg[0] = "El valor de los minutos no puede ser superior a 59";
+					msg[1] = "(Nota: recuerde que debe usar el formato 24 horas hh:mm)";
+					$("#msg0").text(msg[0]);
+					$("#msg1").text(msg[1]);
+					//$("#msg2").text(msg[2]);
+					$("#id01").css("display","block");
+					
+					// recupera el foco una vez cerrado el mensaje
+					$("#horaMedida").focus();
+					return false;
+				}
+				// añado "0" si necesario...
+				horMed = (horMed < 10) ? "0" + horMed : horMed;
+				minMed = (minMed < 10) ? "0" + minMed : minMed;
+			
+				// la hora entrada es correcta... la convierto a  objeto hora
+				var hiyear;
+				var himonth;
+				var hiDay;
+				
+				var hi = new Date();
+				hiYear = hi.getFullYear();
+				hiMonth = hi.getMonth();
+				hiDay = hi.getDate();
+				
+				horaInicial = new Date(hiYear, hiMonth, hiDay, horMed, minMed);
+				
+				// si hemos entrado una hora superior a la actual no vale...
+				var ha;
+				ha = new Date();
+				if(horaInicial > ha){
+					msg[0] = "La hora que ha entrado es superior a la hora actual";
+					msg[1] = "(Nota: recuerde que debe usar el formato 24 horas hh:mm)";
+					$("#msg0").text(msg[0]);
+					$("#msg1").text(msg[1]);
+					//$("#msg2").text(msg[2]);
+					$("#id01").css("display","block");
+					
+					// recupera el foco una vez cerrado el mensaje
+					$("#horaMedida").focus();
+					return false;
+				}
+
+			}else {
+				// uso la hora actual como hora inicial...
+				horaInicial = new Date();
+			}
+			
+			horas = horaInicial.getHours();
+			minutos = horaInicial.getMinutes();
+			horas = (horas < 10) ? "0" + horas : horas;
+			minutos = (minutos < 10) ? "0" + minutos : minutos;
+			
+			horaInicialMS = horaInicial.getTime();
+			
+			// paso valores
+			$("#actInicial").text(addCommas(actInicial) + " MBq");
+			$("#horaInicial").text(horas + ":" + minutos);
+
+			if(limiteFlag) {calHoraLimite();}
+			// alarma
+			alarmFlag = ($("#ON").is(':checked') ? true : false);
+			
+			// recalculo decay
+			goOn();
+				
+			// muestro tablas
+            $("#act").blur();
+			$("#formulario").css("display","none");
+			if(!limiteFlag) {
+				$("#tablaLimite").css("display","none");
+			}
+			$("#decay").css("display","block");
+	
+			// set a timer each 10"
+			contador = setInterval(goOn, 10000);
+			return false;
+		}
+	});
+	
+	$("#finalizar").click(
+		function(){
+			clearInterval(contador);  
+			location.reload();
+	});
+});
+
+/*
+ javascript functions...
+*/
+
+function goOn() {
+	var sonido;
+
+	// recalculo los valores actuales:
+	horaActual = new Date();
+	horas = horaActual.getHours();
+	minutos = horaActual.getMinutes();
+	horas = (horas < 10) ? "0" + horas : horas;
+	minutos = (minutos < 10) ? "0" + minutos : minutos;
+	horaActualMS = horaActual.getTime();
+	
+	// tiempo pasado
+	tiempoPasadoMS = horaActualMS - horaInicialMS;
+	tiempoPasado = msToTime(horaActualMS - horaInicialMS);
+	
+	// decay
+	actActual = actInicial * Math.exp(-0.693 * tiempoPasadoMS/F18HALFLIVE);
+	// actualizo hora límite
+	calHoraLimite();
+	
+	// paso valores
+	$("#actActual").text(addCommas(purgeDecimals(actActual)) + " MBq");
+	$("#horaActual").text(horas + ":" + minutos);
+	$("#tiempoPasado").text(tiempoPasado);
+	//$("#titulo").text("prueba" + " : " + tiempoPasado);
+
+	//controla valor límite
+	if(actActual <= actLimite) {
+		if(alarmFlag) {
+			$(".audio")[0].play();
+		}else {
+			msg[0] = "The Limit Time has been reached¡";
+			msg[1] = "";
+			$("#msg0").text(msg[0]);
+			$("#msg1").text(msg[1]);
+			//$("#msg2").text(msg[2]);
+			$("#id01").css("display","block");
+		}
+	}
+}
+
+function addCommas(nStr) {
+	nStr += '';
+	x = nStr.split('.');
+	x1 = x[0];
+	x2 = x.length > 1 ? ',' + x[1] : '';
+	var rgx = /(\d+)(\d{3})/;
+	while (rgx.test(x1)) {
+		x1 = x1.replace(rgx, '$1' + '.' + '$2');
+	}
+	return x1 + x2;
+}
+
+function msToTime(duration) {
+	var milliseconds = parseInt((duration % 1000) / 100),
+	seconds = Math.floor((duration / 1000) % 60),
+	minutes = Math.floor((duration / (1000 * 60)) % 60),
+	hours = Math.floor((duration / (1000 * 60 * 60)) % 24);
+	
+	hours = (hours < 10) ? "0" + hours : hours;
+	minutes = (minutes < 10) ? "0" + minutes : minutes;
+	seconds = (seconds < 10) ? "0" + seconds : seconds;
+	
+	return hours + ":" + minutes;
+}
+
+function purgeDecimals(valor) {
+	valor += "";
+	x = valor.split('.');
+	return x[0];
+}
+
+function calHoraLimite() {
+
+	horaLimite = -Math.log(actLimite/actActual)/F18DECAYCONSTANT;
+	// embellece tiempo
+	var hor;
+	var min;
+	var txt;
+	hor = purgeDecimals(horaLimite / 60);
+	min = purgeDecimals(horaLimite % 60);
+	
+	// se cumplió el tiempo (hora y min son negativos)
+	if(hor < 0) {
+		hor = Math.abs(hor);
+		min = Math.abs(min);
+		hor = (hor < 10) ? "0" + hor: hor; 
+		min = (min < 10) ? "0" + min: min;
+		tx = "Valor límite (cumplido hace " + hor + ":" + min + " min.)";
+	}else {
+		hor = (hor < 10) ? "0" + hor: hor; 
+		min = (min < 10) ? "0" + min: min;
+		tx = "Valor límite (en aprox. " + hor + ":" + min + " min.)";
+	}
+	$("#valorLimite").text(addCommas(actLimite) + " MBq");
+	$("#textoLimite").text(tx);
+}
+function dummy() {
+	return;
+}
+</script>
+</html>
