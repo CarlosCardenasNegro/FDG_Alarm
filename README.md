@@ -6,6 +6,6 @@
 Este documento describe su utilidad.
 <h2>Autor</h2>
 Carlos Cárdenas Negro
-<footer>
+<p>
   It include a Wecker-sound alarm sound (see Read.txt)
-</footer>
+</p>
